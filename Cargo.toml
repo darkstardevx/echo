@@ -1,0 +1,30 @@
+[package]
+name = "echo"
+version = "0.1.0"
+edition = "2024"
+description = "Traffic inspector TUI — browses WraithFlow's captured traffic"
+license = "MIT"
+
+# The crate/repo is "echo" (the project's name), but the installed binary
+# is "wf-echo" — plain `echo` in ~/.local/bin would shadow the real `echo`
+# for anything that bypasses bash's builtin (subprocess calls, xargs,
+# non-bash shells), since ~/.local/bin conventionally comes before
+# /usr/bin on PATH.
+[[bin]]
+name = "wf-echo"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.104"
+chrono = { version = "0.4.45", features = ["serde"] }
+crossterm = "0.29.0"
+cybercore = { path = "/home/raven/.sysops/cybercore" }
+dirs = "6.0.0"
+ratatui = "0.30.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+toml = "0.8"
+
+[profile.release]
+strip = true
+lto = "thin"
