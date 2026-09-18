@@ -1,0 +1,373 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo — WraithFlow companion</title>
+<meta name="description" content="Traffic inspector TUI that browses WraithFlow's captured traffic. A companion tool, not a standalone proxy.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICAKICA8ZGVmcz48L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMwYTA3MTAiLz4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjYwLjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzRjZTZmMCIgc3Ryb2tlLXdpZHRoPSI2LjAiIG9wYWNpdHk9IjAuOTUiLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjExNy4wIiBmaWxsPSJub25lIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iNi4wIiBvcGFjaXR5PSIwLjciLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjE3NC4wIiBmaWxsPSJub25lIiBzdHJva2U9IiM0Y2U2ZjAiIHN0cm9rZS13aWR0aD0iNi4wIiBvcGFjaXR5PSIwLjQ1Ii8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyMzEuMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGI1Y2Y2IiBzdHJva2Utd2lkdGg9IjYuMCIgb3BhY2l0eT0iMC4yNSIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTUuMCIgZmlsbD0iI0YyRUNGQSIvPgo8L3N2Zz4=">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --void: #0a0710;
+    --panel: 21, 12, 34;
+    --line: #2d1739;
+    --line2: #1f1029;
+    --cyan: #4ce6f0;
+    --violet: #8b5cf6;
+    --violet-dim: #5d3aa8;
+    --white: #F2ECFA;
+    --muted: #8f7ea8;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  ::selection { background: rgba(139,92,246,.3); color: #fff; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 500px at 90% -8%, rgba(76,230,240,.06), transparent 60%),
+      radial-gradient(700px 420px at 5% 100%, rgba(139,92,246,.08), transparent 60%),
+      var(--void);
+    background-attachment: fixed;
+    color: #D6CBE8;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 24px; }
+  h1, h2, h3 { font-family: 'Inter', sans-serif; color: var(--white); margin: 0; font-weight: 700; text-wrap: balance; }
+  p { margin: 0; }
+  code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,.05); padding: 1px 5px; border-radius: 3px; font-size: .9em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- companion banner ---------- */
+  .companion-banner {
+    background: linear-gradient(90deg, rgba(139,92,246,.12), rgba(76,230,240,.08));
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+    padding: 9px 16px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .companion-banner a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+  .companion-banner a:hover { text-decoration: underline; }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(12px);
+    background: rgba(10,7,16,.82);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .brand img { width: 26px; height: 26px; }
+  .brand span { font-weight: 700; color: var(--white); font-size: 16px; letter-spacing: -.01em; }
+  .navlinks { display: flex; align-items: center; gap: 20px; }
+  .navlinks a.navlink { font-size: 13px; color: var(--muted); text-decoration: none; font-weight: 500; }
+  .navlinks a.navlink:hover { color: var(--white); }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px;
+    font-weight: 600; font-size: 14.5px;
+    text-decoration: none; cursor: pointer; border: 1px solid transparent;
+  }
+  .btn-primary { background: rgba(139,92,246,.18); border-color: var(--violet); color: #fff; }
+  .btn-primary:hover { background: rgba(139,92,246,.3); }
+  .btn-ghost { background: rgba(255,255,255,.03); border-color: var(--line); color: #D6CBE8; }
+  .btn-ghost:hover { border-color: #4a2f63; background: rgba(255,255,255,.06); }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .04em;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); color: #b3a3cc;
+  }
+  .pill.cyan { border-color: rgba(76,230,240,.4); color: var(--cyan); background: rgba(76,230,240,.07); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* ---------- ripple panel (chrome system) ---------- */
+  .panel {
+    position: relative; border-radius: 14px; border: 1px solid var(--line);
+    background: linear-gradient(160deg, rgba(21,12,34,.9), rgba(10,7,16,.94));
+    box-shadow: 0 26px 60px -34px rgba(0,0,0,.8);
+  }
+  .panel-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--line2); }
+  .panel-id { display: flex; align-items: center; gap: 9px; }
+  .ripple-dot { position: relative; width: 8px; height: 8px; }
+  .ripple-dot::before, .ripple-dot::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--cyan);
+  }
+  .ripple-dot::after {
+    animation: ripple 2s ease-out infinite; background: transparent; border: 1.5px solid var(--cyan);
+  }
+  @keyframes ripple { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .ripple-dot::after { animation: none; } }
+  .panel-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .05em; color: var(--muted); text-transform: uppercase; }
+  .panel-body { padding: 18px 20px; }
+  .panel-body pre { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12.6px; line-height: 1.8; color: #D6CBE8; white-space: pre; overflow-x: auto; }
+  .panel .t-muted { color: var(--muted); }
+  .panel .t-cyan { color: var(--cyan); }
+  .panel .t-violet { color: var(--violet); }
+  .panel .t-white { color: var(--white); font-weight: 600; }
+  .panel .t-dim { color: #4a3861; }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 56px 0 18px; }
+  .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 46px; align-items: center; }
+  .hero h1 { font-size: 46px; line-height: 1.08; margin-bottom: 16px; letter-spacing: -.01em; }
+  .hero-sub { font-size: 16.5px; color: var(--muted); max-width: 48ch; margin-bottom: 24px; line-height: 1.65; }
+  .hero-cta { display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+  .ripple-visual { display: flex; justify-content: center; }
+  .ripple-visual svg { width: 100%; max-width: 300px; }
+  .r1, .r2, .r3, .r4 { transform-origin: center; animation: pulse 3.4s ease-in-out infinite; }
+  .r2 { animation-delay: .3s; } .r3 { animation-delay: .6s; } .r4 { animation-delay: .9s; }
+  @keyframes pulse { 0%,100% { opacity: .95; } 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .r1,.r2,.r3,.r4 { animation: none; } }
+
+  /* ---------- sections ---------- */
+  section.feature { padding: 46px 0 6px; }
+  .f-kicker { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--violet); margin-bottom: 10px; }
+  .f-grid { display: grid; grid-template-columns: .86fr 1.14fr; gap: 48px; align-items: center; }
+  .f-grid.rev { grid-template-columns: 1.14fr .86fr; }
+  .f-grid.rev .f-copy { order: 2; } .f-grid.rev .f-vis { order: 1; }
+  .f-copy h2 { font-size: 25px; margin-bottom: 12px; }
+  .f-copy p { color: var(--muted); font-size: 14.8px; margin-bottom: 10px; }
+  .f-copy p:last-child { margin-bottom: 0; }
+  .f-copy strong { color: var(--white); }
+  .kbd { display: inline-block; padding: 1px 7px; border: 1px solid var(--line); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--white); background: rgba(255,255,255,.03); }
+
+  .seam { display: flex; align-items: center; gap: 8px; padding: 46px 0 0; }
+  .seam .line { flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 16px); }
+  .seam .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--line); }
+
+  /* ---------- install ---------- */
+  .install { padding: 60px 0 54px; }
+  .install-head { text-align: center; max-width: 560px; margin: 0 auto 26px; }
+  .install-head h2 { font-size: 28px; margin-bottom: 10px; }
+  .install-head p { color: var(--muted); font-size: 14.5px; }
+  .install-card { max-width: 640px; margin: 0 auto; }
+  .os-tabs { display: flex; gap: 6px; padding: 12px 14px 0; }
+  .os-tab { padding: 7px 14px; border-radius: 7px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); background: transparent; border: 1px solid transparent; cursor: pointer; }
+  .os-tab.active { background: rgba(139,92,246,.14); border-color: var(--violet); color: #fff; }
+  .cmd-row { display: flex; align-items: center; gap: 10px; margin: 14px 16px 16px; padding: 12px 8px 12px 16px; background: rgba(0,0,0,.28); border: 1px solid var(--line2); border-radius: 8px; }
+  .cmd-row .prompt { color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-size: 13px; flex-shrink: 0; }
+  .cmd-row code { flex: 1; font-size: 12.6px; background: none; padding: 0; overflow-x: auto; white-space: nowrap; }
+  .copy-btn { flex-shrink: 0; width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--line2); background: rgba(255,255,255,.03); color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .copy-btn:hover { border-color: var(--line); color: #fff; }
+  .copy-btn.copied { color: var(--cyan); border-color: var(--cyan); }
+  .install-note { font-size: 11.5px; color: #5c4d75; padding: 0 16px 14px; text-align: center; }
+  .dl-count { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 14px; }
+  .install-more { text-align: center; margin-top: 14px; }
+  .install-more a { font-size: 12.5px; color: var(--muted); text-decoration: none; border-bottom: 1px dotted var(--line); }
+  .install-more a:hover { color: var(--cyan); border-color: var(--cyan); }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; margin-top: 20px; }
+  .foot-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .foot-brand { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--muted); }
+  .foot-brand img { width: 18px; height: 18px; }
+  .foot-links { display: flex; gap: 16px; }
+  .foot-links a { font-size: 12px; color: var(--muted); text-decoration: none; font-weight: 500; }
+  .foot-links a:hover { color: #fff; }
+  .foot-family { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .06em; color: #33263f; text-transform: uppercase; }
+
+  @media (max-width: 860px) {
+    .hero-grid, .f-grid, .f-grid.rev { grid-template-columns: 1fr; gap: 28px; }
+    .f-grid.rev .f-copy, .f-grid.rev .f-vis { order: initial; }
+    .hero h1 { font-size: 34px; }
+    .navlinks .navlink { display: none; }
+  }
+</style>
+
+<div class="companion-banner">
+  A companion to <a href="https://github.com/darkstardevx/wraithflow" target="_blank" rel="noopener">WraithFlow</a> — not a standalone proxy. Requires WraithFlow's <code>capture_log</code> enabled.
+</div>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICAKICA8ZGVmcz48L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMwYTA3MTAiLz4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjYwLjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzRjZTZmMCIgc3Ryb2tlLXdpZHRoPSI2LjAiIG9wYWNpdHk9IjAuOTUiLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjExNy4wIiBmaWxsPSJub25lIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iNi4wIiBvcGFjaXR5PSIwLjciLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjE3NC4wIiBmaWxsPSJub25lIiBzdHJva2U9IiM0Y2U2ZjAiIHN0cm9rZS13aWR0aD0iNi4wIiBvcGFjaXR5PSIwLjQ1Ii8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyMzEuMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGI1Y2Y2IiBzdHJva2Utd2lkdGg9IjYuMCIgb3BhY2l0eT0iMC4yNSIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTUuMCIgZmlsbD0iI0YyRUNGQSIvPgo8L3N2Zz4=" alt="">
+      <span>ECHO</span>
+    </a>
+    <div class="navlinks">
+      <a class="navlink" href="#browse">Browse</a>
+      <a class="navlink" href="#install">Install</a>
+      <a class="navlink btn btn-ghost" style="padding:7px 15px;font-size:13px;" href="https://github.com/darkstardevx/echo" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="pill-row" style="margin-bottom:18px;">
+        <span class="pill">Rust</span>
+        <span class="pill cyan">ratatui</span>
+        <span class="pill">MIT</span>
+        <span class="pill cyan">wraithflow companion</span>
+      </div>
+      <h1>The payload viewer<br>WraithFlow never had.</h1>
+      <p class="hero-sub">WraithFlow captures traffic — but until now, it only ever went to stdout, which under systemd means <code>journalctl</code> and nothing else. Echo tails WraithFlow's <code>capture_log</code> and gives you an actual flow list: scroll, filter, inspect, follow live or pause to browse history.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#install">Install Echo</a>
+        <a class="btn btn-ghost" href="https://github.com/darkstardevx/wraithflow" target="_blank" rel="noopener">Get WraithFlow first →</a>
+      </div>
+    </div>
+    <div class="ripple-visual">
+      <svg viewBox="0 0 350 350">
+        <circle class="r4" cx="175" cy="175" r="154" fill="none" stroke="#8b5cf6" stroke-width="4" opacity="0.25"/>
+        <circle class="r3" cx="175" cy="175" r="116" fill="none" stroke="#4ce6f0" stroke-width="4" opacity="0.45"/>
+        <circle class="r2" cx="175" cy="175" r="78" fill="none" stroke="#8b5cf6" stroke-width="4" opacity="0.7"/>
+        <circle class="r1" cx="175" cy="175" r="40" fill="none" stroke="#4ce6f0" stroke-width="4" opacity="0.95"/>
+        <circle cx="175" cy="175" r="10" fill="#F2ECFA"/>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<div class="wrap"><div class="seam"><span class="dot"></span><div class="line"></div><span class="dot"></span></div></div>
+
+<section class="feature" id="browse">
+  <div class="wrap f-grid">
+    <div class="f-copy">
+      <div class="f-kicker">Browse, not just tail</div>
+      <h2>An actual flow list.<br>Not a scrollback buffer.</h2>
+      <p>WraithFlow gained one small addition for this: an optional <code>capture_log</code> config field that writes every logged packet to a shared JSONL file alongside its normal stdout output.</p>
+      <p>Echo tails that file and turns it into <strong>something you can actually browse</strong> — not just scroll back through terminal history hoping the line you want hasn't scrolled off.</p>
+    </div>
+    <div class="panel f-vis">
+      <div class="panel-bar"><div class="panel-id"><span class="ripple-dot"></span><span class="panel-label">wf-echo</span></div><span class="panel-label">live</span></div>
+      <div class="panel-body">
+        <pre><span class="t-dim">$</span> <span class="t-white">wf-echo</span>
+
+<span class="t-cyan">http-traffic-gateway</span>   14:32:08   2.1 KB
+<span class="t-violet">secure-db-relay</span>        14:32:09   640 B
+<span class="t-cyan">http-traffic-gateway</span>   14:32:11   14.8 KB
+<span class="t-cyan">http-traffic-gateway</span>   14:32:14   1.2 KB
+
+<span class="t-dim">j/k move &middot; / filter &middot; enter detail &middot; f follow/pause</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="seam"><span class="dot"></span><div class="line"></div><span class="dot"></span></div></div>
+
+<section class="feature">
+  <div class="wrap f-grid rev">
+    <div class="f-copy">
+      <div class="f-kicker">Live or history</div>
+      <h2>Follow live.<br>Or scrub back through it.</h2>
+      <p>Press <span class="kbd">f</span> to toggle between following new flows as they land, or pausing to browse everything already captured — the same tab, no separate mode to learn.</p>
+      <p><code>wf-echo --list</code> dumps every captured flow as JSON, for scripting — no TUI required.</p>
+    </div>
+    <div class="panel f-vis">
+      <div class="panel-bar"><div class="panel-id"><span class="ripple-dot"></span><span class="panel-label">wf-echo --list</span></div><span class="panel-label">json</span></div>
+      <div class="panel-body">
+        <pre><span class="t-dim">$</span> <span class="t-white">wf-echo --list | jq '.[0]'</span>
+
+<span class="t-dim">{</span>
+  <span class="t-cyan">"pipeline"</span>: <span class="t-white">"http-traffic-gateway"</span>,
+  <span class="t-cyan">"bytes"</span>: <span class="t-white">2148</span>,
+  <span class="t-cyan">"direction"</span>: <span class="t-white">"in"</span>,
+  <span class="t-cyan">"timestamp"</span>: <span class="t-white">"2026-09-18T14:32:08Z"</span>
+<span class="t-dim">}</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="seam"><span class="dot"></span><div class="line"></div><span class="dot"></span></div></div>
+
+<section class="feature">
+  <div class="wrap f-grid">
+    <div class="f-copy">
+      <div class="f-kicker">Zero-config setup</div>
+      <h2>Nothing to configure<br>in Echo itself.</h2>
+      <p>Echo reads <code>capture_log</code> straight from WraithFlow's own config — <strong>one field, in one place</strong>. If it isn't set yet, Echo tells you exactly that, rather than just silently showing nothing.</p>
+    </div>
+    <div class="panel f-vis">
+      <div class="panel-bar"><div class="panel-id"><span class="ripple-dot"></span><span class="panel-label">~/.config/wraithflow/config.toml</span></div><span class="panel-label">config</span></div>
+      <div class="panel-body">
+        <pre><span class="t-dim"># add this line, then restart wraithflow</span>
+<span class="t-cyan">capture_log</span> = <span class="t-white">"~/.local/state/wraithflow/captures.jsonl"</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="install" id="install">
+  <div class="wrap">
+    <div class="install-head">
+      <h2>Get Echo running</h2>
+      <p>One command — downloads, verifies the checksum, installs to <code>~/.local/bin</code>.</p>
+    </div>
+    <div class="panel install-card">
+      <div class="os-tabs" role="tablist">
+        <button class="os-tab active" data-os="linux" onclick="ecSetOs('linux')">Linux</button>
+        <button class="os-tab" data-os="macos" onclick="ecSetOs('macos')">macOS</button>
+      </div>
+      <div class="cmd-row">
+        <span class="prompt">&gt;_</span>
+        <code id="ec-cmd" class="mono">curl -fsSL https://raw.githubusercontent.com/darkstardevx/echo/main/install.sh | sh</code>
+        <button class="copy-btn" onclick="ecCopy(this)" aria-label="Copy command">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+      <p class="install-note">Installs <code>wf-echo</code>. Needs WraithFlow already installed and its <code>capture_log</code> configured — see above.</p>
+    </div>
+    <p class="dl-count" id="dl-count">&hellip;</p>
+    <div class="install-more">
+      <a href="https://github.com/darkstardevx/echo#usage" target="_blank" rel="noopener">More install options &amp; manual builds →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-row">
+    <div class="foot-brand">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICAKICA8ZGVmcz48L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMwYTA3MTAiLz4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjYwLjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzRjZTZmMCIgc3Ryb2tlLXdpZHRoPSI2LjAiIG9wYWNpdHk9IjAuOTUiLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjExNy4wIiBmaWxsPSJub25lIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iNi4wIiBvcGFjaXR5PSIwLjciLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjE3NC4wIiBmaWxsPSJub25lIiBzdHJva2U9IiM0Y2U2ZjAiIHN0cm9rZS13aWR0aD0iNi4wIiBvcGFjaXR5PSIwLjQ1Ii8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyMzEuMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGI1Y2Y2IiBzdHJva2Utd2lkdGg9IjYuMCIgb3BhY2l0eT0iMC4yNSIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTUuMCIgZmlsbD0iI0YyRUNGQSIvPgo8L3N2Zz4=" alt="">
+      <span>Echo &middot; MIT licensed &middot; a WraithFlow companion</span>
+    </div>
+    <div class="foot-links">
+      <a href="https://github.com/darkstardevx/echo" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/darkstardevx/wraithflow" target="_blank" rel="noopener">WraithFlow</a>
+      <a href="#install">Install</a>
+    </div>
+    <div class="foot-family">Cybercore family</div>
+  </div>
+</footer>
+
+<script>
+  const CMDS = {
+    linux: 'curl -fsSL https://raw.githubusercontent.com/darkstardevx/echo/main/install.sh | sh',
+    macos: 'curl -fsSL https://raw.githubusercontent.com/darkstardevx/echo/main/install.sh | sh'
+  };
+  function ecSetOs(os) {
+    document.querySelectorAll('.os-tab').forEach(t => t.classList.toggle('active', t.dataset.os === os));
+    document.getElementById('ec-cmd').textContent = CMDS[os];
+  }
+  function ecCopy(btn) {
+    const text = document.getElementById('ec-cmd').textContent;
+    navigator.clipboard?.writeText(text).then(() => {
+      btn.classList.add('copied');
+      setTimeout(() => btn.classList.remove('copied'), 1400);
+    }).catch(() => {});
+  }
+  try { if (/Mac OS X|Macintosh/.test(navigator.userAgent)) ecSetOs('macos'); } catch (e) {}
+
+  fetch('https://api.github.com/repos/darkstardevx/echo/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(rel => {
+      const dl = (rel.assets || [])
+        .filter(a => !a.name.endsWith('.sha256'))
+        .reduce((sum, a) => sum + (a.download_count || 0), 0);
+      document.getElementById('dl-count').textContent = dl.toLocaleString() + ' downloads (' + rel.tag_name + ')';
+    })
+    .catch(() => { document.getElementById('dl-count').textContent = ''; });
+</script>
