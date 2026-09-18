@@ -1,0 +1,19 @@
+Echo Ripple Ping Palette
+
+Void         #0a0710   (shared with WraithFlow's own void-purple background)
+Panel        #150c22
+Line         #2d1739
+Cyan         #4CE6F0
+Violet       #8B5CF6
+Violet Dim   #5D3AA8
+White        #F2ECFA
+Muted        #8F7EA8
+
+Deliberately shares WraithFlow's void-purple background family (visual
+sibling cue) but uses its own cyan/violet accent pair -- distinct from
+WraithFlow's orange/acid-green signature.
+
+Fonts: Inter + JetBrains Mono, the same pairing WraithFlow's own site
+uses -- reused on purpose since Echo is marketed as a WraithFlow
+companion, not an independent brand. Both embedded as base64 woff2 in
+every text-bearing SVG.

@@ -1,7 +1,15 @@
-# Echo
+<p align="center">
+  <img src="assets/echo-brand/echo-hero.svg" alt="Echo — traffic inspector TUI, a WraithFlow companion" width="820">
+</p>
+
+<p align="center">
+  <a href="https://darkstardevx.github.io/echo/">Site →</a>
+</p>
 
 [![CI](https://github.com/darkstardevx/echo/actions/workflows/ci.yml/badge.svg)](https://github.com/darkstardevx/echo/actions/workflows/ci.yml)
 [![Release](https://github.com/darkstardevx/echo/actions/workflows/release.yml/badge.svg)](https://github.com/darkstardevx/echo/actions/workflows/release.yml)
+
+> A companion to [WraithFlow](https://github.com/darkstardevx/wraithflow) — not a standalone proxy.
 
 Traffic inspector TUI — browses [WraithFlow](https://github.com/darkstardevx/wraithflow)'s
 captured traffic. Installed binary: `wf-echo` (not `echo` — that would shadow
