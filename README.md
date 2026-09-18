@@ -1,9 +1,22 @@
 # Echo
 
+[![CI](https://github.com/darkstardevx/echo/actions/workflows/ci.yml/badge.svg)](https://github.com/darkstardevx/echo/actions/workflows/ci.yml)
+[![Release](https://github.com/darkstardevx/echo/actions/workflows/release.yml/badge.svg)](https://github.com/darkstardevx/echo/actions/workflows/release.yml)
+
 Traffic inspector TUI — browses [WraithFlow](https://github.com/darkstardevx/wraithflow)'s
 captured traffic. Installed binary: `wf-echo` (not `echo` — that would shadow
 the real shell builtin/coreutil for anything that bypasses bash's own
 builtin resolution).
+
+## 📦 Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/darkstardevx/echo/main/install.sh | sh
+```
+
+Downloads the latest release for your platform (Linux or macOS, x86_64
+or aarch64), verifies its SHA-256 checksum, and installs `wf-echo` to
+`~/.local/bin`. Or build from source with `cargo build --release`.
 
 ## Why
 
